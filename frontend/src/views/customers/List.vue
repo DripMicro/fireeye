@@ -7,14 +7,14 @@
         :single-expand="true"
         :options.sync="options"
         :server-items-length="totalRecords"
-        @update:options="getScooter()"
+        @update:options="getSortScooter()"
       >
         <template v-slot:top>
           <v-toolbar flat>
             <v-toolbar-title>Scooter</v-toolbar-title>
             <v-divider class="mx-4" inset vertical></v-divider>
             <v-spacer></v-spacer>
-            <v-btn color="primary" dark class="mb-2" @click="onCreateClick()">Create</v-btn>
+            <v-btn color="success" dark class="mb-2" @click="onCreateClick()">Create</v-btn>
             <v-btn color="primary" dark class="mb-2 ml-2">EXPORT</v-btn>
           </v-toolbar>
           <v-row class="mx-1">
@@ -70,11 +70,27 @@
             <td>
               <v-icon
                 small
-                color="secondary"
+                color="orange"
+                class="mr-2"
+                @click="onViewClick(item)"
+              >
+                mdi-eye
+              </v-icon>
+              <v-icon
+                small
+                color="blue"
                 class="mr-2"
                 @click="onEditClick(item)"
               >
                 mdi-pencil
+              </v-icon>
+              <v-icon
+                small
+                color="red"
+                class="mr-2"
+                @click="onDeleteClick(item.id)"
+              >
+                mdi-delete
               </v-icon>
             </td>
           </tr>
@@ -103,7 +119,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr
+                  <!-- <tr
                     v-for="(productItem, productIndex) in item.serial_numbers"
                     :key="productIndex"
                   >
@@ -135,7 +151,7 @@
                         {{ getStatus(productItem.status).name }}
                       </v-chip>
                     </td>
-                  </tr>
+                  </tr> -->
                 </tbody>
               </template>
             </v-simple-table>
@@ -148,34 +164,88 @@
     <v-dialog
       v-model="isEditDialogEnabled"
       transition="dialog-bottom-transition"
-      max-width="500"
+      max-width="800"
     >
       <v-card>
         <v-toolbar color="primary" dark>
-          Edit Customer: {{ record.name }}
+          Edit Scooter
         </v-toolbar>
-        <v-row class="px-10 pt-6">
-          <v-col md="6">
-            <v-text-field
-              label="Name"
-              outlined
-              v-model="record.name"
-            ></v-text-field>
-          </v-col>
-          <v-col md="6">
-            <v-text-field
-              label="Mobile Number"
-              outlined
-              v-model="record.mobile_number"
-            ></v-text-field>
-          </v-col>
-        </v-row>
+        <v-card-text>
+          <v-row class="px-10 pt-12">
+            <v-col md="6" cols="12" >
+              <v-text-field
+                label="First Name"
+                outlined
+                v-model="editRecord.firstname"
+              ></v-text-field>
+            </v-col>
+            <v-col md="6" cols="12" >
+              <v-text-field
+                label="Last Name"
+                outlined
+                v-model="editRecord.lastname"
+              ></v-text-field>
+            </v-col>
+            <v-col md="6" cols="12" >
+              <v-text-field
+                label="Phone"
+                outlined
+                v-model="editRecord.phone"
+              ></v-text-field>
+            </v-col>
+            <v-col md="6" cols="12" >
+              <v-text-field
+                label="Barcode"
+                outlined
+                v-model="editRecord.barcode"
+              ></v-text-field>
+            </v-col>
+            <v-col md="6" cols="12" >
+              <v-text-field
+                label="Model"
+                outlined
+                v-model="editRecord.model"
+              ></v-text-field>
+            </v-col>
+            <v-col md="6" cols="12" >
+              <v-text-field
+                label="Termen Aproximativ"
+                outlined
+                v-model="editRecord.termen"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12" >
+              <v-textarea
+                label="problem"
+                outlined
+                v-model="editRecord.problem"
+              ></v-textarea>
+            </v-col>
+            <v-col md="6" cols="12" >
+              <v-text-field
+                label="Price"
+                outlined
+                v-model="editRecord.price"
+              ></v-text-field>
+            </v-col>
+            <v-col md="6" cols="12" >
+              <v-select
+                :items="scoooterStatusItems"
+                label="Scooter Status"
+                item-text="itemName"
+                v-model="editRecord.statusId"
+                outlined
+              ></v-select>
+            </v-col>
+          </v-row>
+        </v-card-text>
         <v-card-actions class="justify-end">
-          <v-btn color="primary" @click="putEditCustomer()">Confirm</v-btn>
+          <v-btn color="primary" @click="putEditCustomer()">Save</v-btn>
           <v-btn text @click="isEditDialogEnabled = false">Close</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
+
 
     <!-- Create Dialog -->
     <v-dialog
@@ -248,7 +318,7 @@
             <v-col md="6" cols="12" >
               <v-select
                 :items="scoooterStatusItems"
-                label="Outlined style"
+                label="Scooter Status"
                 item-text="itemName"
                 v-model="record.statusId"
                 outlined
@@ -262,6 +332,97 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- View Dialog -->
+    <v-dialog
+      v-model="isViewDialogEnabled"
+      transition="dialog-bottom-transition"
+      max-width="800"
+    >
+      <v-card>
+        <v-toolbar color="primary" dark>
+          View Scooter
+        </v-toolbar>
+        <v-card-text>
+          <v-simple-table>
+            <template v-slot:default>
+              <tbody>
+                <tr>
+                  <td><h3 class="font-weight-black">Id</h3></td>
+                  <td><h4 class="font-weight-medium">{{ viewRecord.id }}</h4></td>
+                </tr>
+                <tr>
+                  <td><h3 class="font-weight-black">Name</h3></td>
+                  <td><h4 class="font-weight-medium">{{ viewRecord.firstname }} {{ viewRecord.lastname }}</h4></td>
+                </tr>
+                <tr>
+                  <td><h3 class="font-weight-black">Phone</h3></td>
+                  <td><h4 class="font-weight-medium">{{ viewRecord.phone }}</h4></td>
+                </tr>
+                <tr>
+                  <td><h3 class="font-weight-black">Barcode</h3></td>
+                  <td><h4 class="font-weight-medium">{{ viewRecord.barcode }}</h4></td>
+                </tr>
+                <tr>
+                  <td><h3 class="font-weight-black">Model</h3></td>
+                  <td><h4 class="font-weight-medium">{{ viewRecord.model }}</h4></td>
+                </tr>
+                <tr>
+                  <td><h3 class="font-weight-black">TERMEN APROXIMATIV</h3></td>
+                  <td><h4 class="font-weight-medium">{{ viewRecord.termen }}</h4></td>
+                </tr>
+                <tr>
+                  <td><h3 class="font-weight-black">Problem</h3></td>
+                  <td><h4 class="font-weight-medium">{{ viewRecord.problem }}</h4></td>
+                </tr>
+                <tr>
+                  <td><h3 class="font-weight-black">Price</h3></td>
+                  <td><h4 class="font-weight-medium">{{ viewRecord.price }}</h4></td>
+                </tr>
+                <tr>
+                  <td><h3 class="font-weight-black">Created at</h3></td>
+                  <td><h4 class="font-weight-medium">{{ viewRecord.createdAt }}</h4></td>
+                </tr>
+                <tr>
+                  <td><h3 class="font-weight-black">Updated at</h3></td>
+                  <td><h4 class="font-weight-medium">{{ viewRecord.updatedAt }}</h4></td>
+                </tr>
+                <tr>
+                  <td><h3 class="font-weight-black">Scooter Status</h3></td>
+                  <td><h4 class="font-weight-medium">{{ scoooterStatusItems[viewRecord.statusId].itemName }}</h4></td>
+                </tr>
+              </tbody>
+            </template>
+          </v-simple-table>
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn text @click="isViewDialogEnabled = false">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Delete Dialog -->
+    <v-dialog
+      v-model="isDeleteDialogEnabled"
+      transition="dialog-bottom-transition"
+      max-width="300"
+    >
+      <v-card>
+        <v-toolbar color="primary" dark>
+          Delete Scooter
+        </v-toolbar>
+        <v-card-text>
+          <v-row class="px-10 pt-12 pb-6 justify-center">
+              <h2> Are you sure? </h2>
+          </v-row>
+        </v-card-text>
+        <v-card-actions class="justify-center">
+          <v-btn color="primary" @click="deleteScooter()">Confirm</v-btn>
+          <v-btn text @click="isDeleteDialogEnabled = false">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-snackbar v-model="snackBar.enabled" timeout="3000">
       {{ snackBar.message }}
       <template v-slot:action="{ attrs }">
@@ -285,6 +446,8 @@ export default {
     return {
       isEditDialogEnabled: false,
       isCreateDialogEnabled: false,
+      isDeleteDialogEnabled: false,
+      isViewDialogEnabled: false,
       snackBar: {
         enabled: false,
         message: "",
@@ -300,13 +463,16 @@ export default {
         {value: '2', itemName: 'Exit'}
       ],
       record: {},
+      editRecord: {},
+      viewRecord: {},
+      deleteRecordId: "-1",
       headers: [
         {
           text: "ID",
           align: "start",
           value: "id",
         },
-        { text: "Name", value: "fullname" },
+        { text: "Name", value: "firstname" },
         { text: "Phone", value: "phone" },
         { text: "Barcode", value: "barcode" },
         { text: "Model", value: "model" },
@@ -339,11 +505,33 @@ export default {
       }
     },
     onEditClick(item) {
-      this.record = item;
-      this.isEditDialogEnabled = true;
+      this.editRecord = item;
+      this.$http
+        .get("scooter/edit", {
+          params: {
+            id: item.id
+          },
+        })
+        .then((response) => {
+          if (response.data) {
+            console.log(response.data);
+            this.editRecord = response.data.result;
+            this.isEditDialogEnabled = true;
+          }
+        })
+        .catch((error) => {});
+      
+    },
+    onDeleteClick(id) {
+      this.deleteRecordId = id;
+      this.isDeleteDialogEnabled = true;
     },
     onCreateClick() {
       this.isCreateDialogEnabled = true;
+    },
+    onViewClick(item) {
+      this.viewRecord = item;
+      this.isViewDialogEnabled = true;
     },
     postCreateScooter() {
       console.log(this.record);
@@ -363,16 +551,34 @@ export default {
           this.snackBar.message = "Cannot edit customer at the moment";
         });
     },
+    deleteScooter() {
+      console.log(this.deleteRecordId);
+      this.$http
+        .delete("scooter/" + this.deleteRecordId)
+        .then((response) => {
+          if (response.data) {
+            this.getScooter();
+            this.isDeleteDialogEnabled = false;
+            this.record = {};
+            this.snackBar.enabled = true;
+            this.snackBar.message = "Successfully delete Scooter";
+          }
+        })
+        .catch((error) => {
+          this.snackBar.enabled = true;
+          this.snackBar.message = "Cannot edit customer at the moment";
+        });
+    },
     putEditCustomer() {
       this.$http
-        .put("admin/customer/" + this.record.id, this.record)
+        .put("scooter", this.editRecord)
         .then((response) => {
           if (response.data) {
             this.getScooter();
             this.isEditDialogEnabled = false;
             this.record = {};
             this.snackBar.enabled = true;
-            this.snackBar.message = "Successfully edited user";
+            this.snackBar.message = "Successfully edited Scooter";
           }
         })
         .catch((error) => {
@@ -418,6 +624,7 @@ export default {
       this.getScooter();
     },
     getScooter() {
+      console.log("getScooter");
       this.$http
         .get("scooter", {
           params: {
@@ -436,6 +643,31 @@ export default {
           }
         })
         .catch((error) => {});
+    },
+    getSortScooter() {
+      if (this.options.sortBy[0]) {
+        console.log("clicked");
+        console.log(this.options.sortBy);
+        console.log(this.options.sortDesc);
+        this.$http
+          .get("scooter", {
+            params: {
+              page: this.options.page,
+              sort_by: this.options.sortBy ? this.options.sortBy[0] : null,
+              descending: this.options.sortDesc ? this.options.sortDesc[0] : null,
+              rows_per_page: this.options.itemsPerPage,
+              search: this.search,
+            },
+          })
+          .then((response) => {
+            if (response.data) {
+              console.log(response.data);
+              this.items = response.data.result;
+              this.totalRecords = response.data.count;
+            }
+          })
+          .catch((error) => {});
+      }
     },
     findUser() {
       if (this.$route.query.email) {
