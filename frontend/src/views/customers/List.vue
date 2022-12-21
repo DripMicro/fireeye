@@ -7,14 +7,15 @@
         :single-expand="true"
         :options.sync="options"
         :server-items-length="totalRecords"
-        @update:options="getCustomers()"
+        @update:options="getScooter()"
       >
         <template v-slot:top>
           <v-toolbar flat>
-            <v-toolbar-title>Customers</v-toolbar-title>
+            <v-toolbar-title>Scooter</v-toolbar-title>
             <v-divider class="mx-4" inset vertical></v-divider>
             <v-spacer></v-spacer>
-            <v-btn color="primary" dark class="mb-2">EXPORT</v-btn>
+            <v-btn color="primary" dark class="mb-2" @click="onCreateClick()">Create</v-btn>
+            <v-btn color="primary" dark class="mb-2 ml-2">EXPORT</v-btn>
           </v-toolbar>
           <v-row class="mx-1">
             <v-col md="3">
@@ -31,44 +32,43 @@
             </v-col>
           </v-row>
         </template>
-        <template v-slot:item="{ item, expand, isExpanded }">
+        <template v-slot:item="{ item }">
           <tr>
             <td>
-              {{ item.name }}
+              {{ item.id }}
             </td>
             <td>
-              {{ item.mobile_number }}
+              {{ item.firstname }} {{ item.lastname }}
             </td>
             <td>
-              {{ item.email }}
+              {{ item.phone }}
             </td>
             <td>
-              {{ setDateTimeFormat(item.created_at) }}
+              {{ item.barcode }}
             </td>
             <td>
-              <div class="d-flex">
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-chip
-                      color="primary"
-                      dark
-                      v-bind="attrs"
-                      v-on="on"
-                      @click="expand(!isExpanded)"
-                    >
-                      {{ item.serial_numbers.length + " Product(s)" }}
-                    </v-chip>
-                  </template>
-                  <span>Click To Preview Products</span>
-                </v-tooltip>
-              </div>
+              {{ item.model }}
+            </td>
+            <td>
+              {{ item.termen }}
+            </td>
+            <td>
+              {{ item.problem }}
+            </td>
+            <td>
+              {{ item.price }}
+            </td>
+            <td>
+              {{ setDateTimeFormat(item.createdAt) }}
+            </td>
+            <td>
+              {{ setDateTimeFormat(item.updatedAt) }}
+            </td>
+            <td>
+              {{ scoooterStatusItems[item.statusId].itemName }}
             </td>
             <td>
               <v-icon
-                v-if="
-                  $store.getters.getUserRole == 'admin' ||
-                  $store.getters.getUserRole == 'moderator'
-                "
                 small
                 color="secondary"
                 class="mr-2"
@@ -87,12 +87,18 @@
               <template v-slot:default>
                 <thead>
                   <tr>
-                    <th class="text-left">Serial No.</th>
-                    <th class="text-left">Created Date</th>
-                    <th class="text-left">Activated Date</th>
-                    <th class="text-left">Warranty Expiry</th>
-                    <th class="text-left">Product Expiry</th>
-                    <th class="text-left">Status</th>
+                    <th class="text-left">ID</th>
+                    <th class="text-left">Name</th>
+                    <th class="text-left">Phone</th>
+                    <th class="text-left">Barcode</th>
+                    <th class="text-left">Model</th>
+                    <th class="text-left">Termen Aproximative</th>
+                    <th class="text-left">Problem</th>
+                    <th class="text-left">Price</th>
+                    <th class="text-left">Created At</th>
+                    <th class="text-left">Updated At</th>
+                    <th class="text-left">Scooter Status</th>
+                    <th class="text-left"></th>
                     <!-- <th class="text-left">Actions</th> -->
                   </tr>
                 </thead>
@@ -137,6 +143,8 @@
         </template>
       </v-data-table>
     </v-card-text>
+
+    <!-- Edit Dialog -->
     <v-dialog
       v-model="isEditDialogEnabled"
       transition="dialog-bottom-transition"
@@ -168,6 +176,92 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Create Dialog -->
+    <v-dialog
+      v-model="isCreateDialogEnabled"
+      transition="dialog-bottom-transition"
+      max-width="800"
+    >
+      <v-card>
+        <v-toolbar color="primary" dark>
+          Create Scooter
+        </v-toolbar>
+        <v-card-text>
+          <v-row class="px-10 pt-12">
+            <v-col md="6" cols="12" >
+              <v-text-field
+                label="First Name"
+                outlined
+                v-model="record.firstname"
+              ></v-text-field>
+            </v-col>
+            <v-col md="6" cols="12" >
+              <v-text-field
+                label="Last Name"
+                outlined
+                v-model="record.lastname"
+              ></v-text-field>
+            </v-col>
+            <v-col md="6" cols="12" >
+              <v-text-field
+                label="Phone"
+                outlined
+                v-model="record.phone"
+              ></v-text-field>
+            </v-col>
+            <v-col md="6" cols="12" >
+              <v-text-field
+                label="Barcode"
+                outlined
+                v-model="record.barcode"
+              ></v-text-field>
+            </v-col>
+            <v-col md="6" cols="12" >
+              <v-text-field
+                label="Model"
+                outlined
+                v-model="record.model"
+              ></v-text-field>
+            </v-col>
+            <v-col md="6" cols="12" >
+              <v-text-field
+                label="Termen Aproximativ"
+                outlined
+                v-model="record.termen"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12" >
+              <v-textarea
+                label="problem"
+                outlined
+                v-model="record.problem"
+              ></v-textarea>
+            </v-col>
+            <v-col md="6" cols="12" >
+              <v-text-field
+                label="Price"
+                outlined
+                v-model="record.price"
+              ></v-text-field>
+            </v-col>
+            <v-col md="6" cols="12" >
+              <v-select
+                :items="scoooterStatusItems"
+                label="Outlined style"
+                item-text="itemName"
+                v-model="record.statusId"
+                outlined
+              ></v-select>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn color="primary" @click="postCreateScooter()">Create</v-btn>
+          <v-btn text @click="isCreateDialogEnabled = false">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-snackbar v-model="snackBar.enabled" timeout="3000">
       {{ snackBar.message }}
       <template v-slot:action="{ attrs }">
@@ -190,6 +284,7 @@ export default {
   data() {
     return {
       isEditDialogEnabled: false,
+      isCreateDialogEnabled: false,
       snackBar: {
         enabled: false,
         message: "",
@@ -199,18 +294,28 @@ export default {
       totalRecords: 0,
       search: "",
       items: [],
+      scoooterStatusItems: [
+        {value: '0', itemName: 'At Work'},
+        {value: '1', itemName: 'Completed'},
+        {value: '2', itemName: 'Exit'}
+      ],
       record: {},
       headers: [
         {
-          text: "Name",
+          text: "ID",
           align: "start",
-          value: "name",
+          value: "id",
         },
-        { text: "Mobile No", value: "mobile_number" },
-        { text: "Email", value: "email" },
-        { text: "Created Date", value: "created_at" },
-        { text: "No of Products", value: "products", sortable: false },
-        { text: "Actions", value: "actions", sortable: false },
+        { text: "Name", value: "fullname" },
+        { text: "Phone", value: "phone" },
+        { text: "Barcode", value: "barcode" },
+        { text: "Model", value: "model" },
+        { text: "Termen Aproximativ", value: "termen" },
+        { text: "Problem", value: "problem" },
+        { text: "Price", value: "price" },
+        { text: "Created At", value: "createdAt" },
+        { text: "Updated At", value: "updatedAt" },
+        { text: "Scooter Status", value: "statusId" }
       ],
     };
   },
@@ -237,12 +342,33 @@ export default {
       this.record = item;
       this.isEditDialogEnabled = true;
     },
+    onCreateClick() {
+      this.isCreateDialogEnabled = true;
+    },
+    postCreateScooter() {
+      console.log(this.record);
+      this.$http
+        .post("scooter", this.record)
+        .then((response) => {
+          if (response.data) {
+            this.getScooter();
+            this.isEditDialogEnabled = false;
+            this.record = {};
+            this.snackBar.enabled = true;
+            this.snackBar.message = "Successfully create Scooter";
+          }
+        })
+        .catch((error) => {
+          this.snackBar.enabled = true;
+          this.snackBar.message = "Cannot edit customer at the moment";
+        });
+    },
     putEditCustomer() {
       this.$http
         .put("admin/customer/" + this.record.id, this.record)
         .then((response) => {
           if (response.data) {
-            this.getCustomers();
+            this.getScooter();
             this.isEditDialogEnabled = false;
             this.record = {};
             this.snackBar.enabled = true;
@@ -289,11 +415,11 @@ export default {
       }
     },
     onSearchInput() {
-      this.getCustomers();
+      this.getScooter();
     },
-    getCustomers() {
+    getScooter() {
       this.$http
-        .get("admin/customer", {
+        .get("scooter", {
           params: {
             page: this.options.page,
             sort_by: this.options.sortBy ? this.options.sortBy[0] : null,
@@ -304,8 +430,9 @@ export default {
         })
         .then((response) => {
           if (response.data) {
-            this.items = response.data.data;
-            this.totalRecords = response.data.meta.total;
+            console.log(response.data);
+            this.items = response.data.result;
+            this.totalRecords = response.data.count;
           }
         })
         .catch((error) => {});
@@ -318,7 +445,7 @@ export default {
   },
   created() {
     this.findUser();
-    this.getCustomers();
+    this.getScooter();
   },
 };
 </script>
