@@ -9,10 +9,11 @@ const db = require('../models');
 const config = require('../config/auth.config');
 
 const JWT_SECRET = config.secret;
-
 const Scooter = db.scooter;
 const Company = db.company;
 const { sequelize } = db;
+const Op = db.Sequelize.Op;
+
 
 exports.getScooter = (req, res) => {
 
@@ -33,15 +34,26 @@ exports.getScooter = (req, res) => {
       let pages = Math.ceil(data.count / limit);
       let offset = limit * (page - 1);
       let search = req.query.search;
-
+      console.log(search);
        Scooter
           .findAll({
+            where: {
+              [Op.or]: [
+                {id: { [Op.like]: '%' + search + '%' }},
+                {firstname: { [Op.like]: '%' + search + '%' }},
+                {lastname: { [Op.like]: '%' + search + '%' }},
+                {phone: { [Op.like]: '%' + search + '%' }},
+                {barcode: { [Op.like]: '%' + search + '%' }},
+                {termen: { [Op.like]: '%' + search + '%' }},
+                {problem: { [Op.like]: '%' + search + '%' }},
+                {price: { [Op.like]: '%' + search + '%' }},
+                {createdAt: { [Op.like]: '%' + search + '%' }},
+                {updatedAt: { [Op.like]: '%' + search + '%' }}
+              ]
+            },
             limit: limit,
             offset: offset,
-            order: [[sortfield || 'id', sortOrder || 'ASC']], // fixed at here
-            where: {
-              firstname: {$regex : search}
-            }
+            order: [[sortfield || 'id', sortOrder || 'ASC']] // fixed at here
           })
           .then(users => {
             res.status(200).json({
@@ -54,6 +66,7 @@ exports.getScooter = (req, res) => {
           });
         })
         .catch(err => {
+          console.log(err);
           res.status(500).json({
             status: 0,
             message: "Data is not retrieved from database"
