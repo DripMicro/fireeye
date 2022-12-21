@@ -16,6 +16,7 @@ const { sequelize } = db;
 
 exports.getScooter = (req, res) => {
 
+  
   const { authorization } = req.headers;
   if (!authorization) {
     return res.status(400).send([]);
@@ -25,32 +26,61 @@ exports.getScooter = (req, res) => {
   Scooter
     .findAndCountAll()
     .then(data => {
-      console.log("hello world", req.params);
-      console.log("count", data.count);
-      let page = (req.params.page && req.params.page) || 1;
-      let sortfield = req.params.sort_by;
-      let sortOrder = req.params.descending ? 'DESC' : 'ASC';
-      let limit = req.params.rows_per_page || 10;
+      let page = (req.query.page && req.query.page) || 1;
+      let sortfield = req.query.sort_by;
+      let sortOrder = req.query.descending == 'true' ? 'DESC' : 'ASC';
+      let limit = req.query.rows_per_page * 1 || 10;
       let pages = Math.ceil(data.count / limit);
       let offset = limit * (page - 1);
-      console.log(page);
-      console.log(sortfield);
-      console.log(limit);
+      let search = req.query.search;
+
+       Scooter
+          .findAll({
+            limit: limit,
+            offset: offset,
+            order: [[sortfield || 'id', sortOrder || 'ASC']], // fixed at here
+            where: {
+              firstname: {$regex : search}
+            }
+          })
+          .then(users => {
+            res.status(200).json({
+              status: 1,
+              message: "Data has been retrieved",
+              result: users,
+              count: data.count,
+              pages: pages
+            });
+          });
+        })
+        .catch(err => {
+          res.status(500).json({
+            status: 0,
+            message: "Data is not retrieved from database"
+          });
+        });
+};
+
+exports.getEditScooter = (req, res) => {
+
+  
+  const { authorization } = req.headers;
+  if (!authorization) {
+    return res.status(400).send([]);
+  }
+
+  req.query.id
+  
       Scooter
-        .findAll({
-          limit: limit,
-          offset: offset,
-          order: [[sortfield || 'id', sortOrder || 'DESC']] // fixed at here
+        .findOne({
+           where: { id: req.query.id } 
         })
         .then(users => {
           res.status(200).json({
             status: 1,
             message: "Data has been retrieved",
             result: users,
-            count: data.count,
-            pages: pages
           });
-        });
     })
     .catch(err => {
       res.status(500).json({
@@ -63,58 +93,60 @@ exports.getScooter = (req, res) => {
   // });
 };
 
-exports.getManagerList = (req, res) => {
-  sequelize
-    .query('SELECT officeId, userId FROM `user_offices` WHERE isManager = 1', {
-      type: sequelize.QueryTypes.SELECT
+exports.getSearchScooter = (req, res) => {
+    Scooter
+        .findAll({
+           where: { id:  {'$regex': req.query.search} } 
+        })
+        .then(users => {
+          res.status(200).json({
+            status: 1,
+            message: "Data has been retrieved",
+            result: users,
+          });
     })
-    .then((users) => {
-      res.status(200).send(users);
+    .catch(err => {
+      res.status(500).json({
+        status: 0,
+        message: "Data is not retrieved from database"
+      });
     });
 };
 
-exports.updateOfficeList = (req, res) => {
-  const officeList = req.body;
-  officeList.map((reqOffice) => {
-    const updateValues = {
-      emoji: reqOffice.emoji,
-      name: reqOffice.name,
-      capacity: reqOffice.capacity
-    };
-    Office.update(updateValues, { where: { id: reqOffice.id } });
+exports.updateScooter = (req, res) => {
+  const { authorization } = req.headers;
+  if (!authorization) {
+    return res.status(400).send([]);
+  }
 
-    const sql = `UPDATE user_offices SET isManager = 0`;
-    sequelize
-      .query(sql, {
-        type: sequelize.QueryTypes.UPDATE
-      })
-      .then(() => {
-        reqOffice.managers.map((manager) => {
-          const sql = `
-          UPDATE user_offices
-          SET isManager = 1
-          WHERE userId = ${manager.id} and officeId = ${reqOffice.id};
-        `;
-          sequelize.query(sql, {
-            type: sequelize.QueryTypes.UPDATE
-          });
-        });
-      });
-  });
-  res.status(200).send('success');
+    const updateValues = {
+      firstname: req.body.firstname,
+      lastname: req.body.lastname,
+      phone: req.body.phone, 
+      barcode: req.body.barcode,
+      model: req.body.model,
+      termen: req.body.termen,
+      problem: req.body.problem,
+      price: req.body.price,
+      statusId: req.body.statusId
+    };
+    Scooter.update(updateValues, { where: { id: req.body.id } }).then((data) => {
+      res.status(200).send(data);
+    });
+
 };
 
-exports.deleteOffice = (req, res) => {
-  const { officeId } = req.body;
-  Office.update(
-    { isActive: 0 },
-    {
-      where: {
-        id: officeId
-      }
-    }
-  );
-  res.status(200).send({ message: 'Deleted successfully!' });
+exports.deleteScooter = (req, res) => {
+  sequelize
+    .query('DELETE FROM scooters WHERE id = ' + req.params.id , {
+      type: sequelize.QueryTypes.DELETE
+    })
+    .then((users) => {
+      res.status(200).send({ message: 'Deleted successfully!' });
+    });
+  // Scooter.deleteOne({ id: req.params.id }).then((data) => {
+  //   res.status(200).send({ message: 'Deleted successfully!' });
+  // })
 };
 
 exports.addScooter = (req, res) => {
@@ -123,7 +155,6 @@ exports.addScooter = (req, res) => {
     return res.status(400).send([]);
   }
 
-  console.log(req.body);
 
   // const accessToken = authorization.split(' ')[1];
   // const { companyId } = jwt.verify(accessToken, JWT_SECRET);
