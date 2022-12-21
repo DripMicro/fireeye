@@ -77,9 +77,9 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to doctortrotineta application.' });
 });
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'build', 'index.html'));
+// });
 
 // routes
 require('./app/routes/auth.routes')(app);
@@ -90,6 +90,7 @@ require('./app/routes/organization.routes')(app);
 require('./app/routes/general.routes')(app);
 require('./app/routes/superadmin.routes')(app);
 require('./app/routes/payment.routes')(app);
+require('./app/routes/scooter.routes')(app);
 
 // set port, listen for requests
 const PORT = process.env.PORT || 8081;
