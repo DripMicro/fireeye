@@ -14,8 +14,8 @@ export default (i18n) => [
   },
   {
     icon: "mdi-human-male",
-    text: "Customer",
-    link: "/admin/customer",
+    text: "Scooter",
+    link: "/admin/scooter",
   },
   // admin.getResourceLink("serial_no"),
   // admin.getResourceLink("users"),

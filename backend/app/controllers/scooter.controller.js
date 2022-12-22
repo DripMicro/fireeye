@@ -74,6 +74,35 @@ exports.getScooter = (req, res) => {
         });
 };
 
+exports.getScooterOne = (req, res) => {
+
+  
+  const { authorization } = req.headers;
+  if (!authorization) {
+    return res.status(400).send([]);
+  }
+
+  req.params.id
+
+  Scooter
+    .findOne({where: { id : req.params.id }})
+    .then(users => {
+      console.log(users);
+        res.status(200).json({
+          status: 1,
+          message: "Data has been retrieved",
+          result: users,
+        });
+      })
+      .catch(err => {
+        console.log(err);
+        res.status(500).json({
+          status: 0,
+          message: "Data is not retrieved from database"
+        });
+      });
+};
+
 exports.getEditScooter = (req, res) => {
 
   

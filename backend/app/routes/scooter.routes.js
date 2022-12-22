@@ -13,6 +13,7 @@ module.exports = (app) => {
 
   // --------------------- Office CRUD section --------------------------------------------------------------
   app.get('/api/scooter', controller.getScooter);
+  app.get('/api/scooter/:id', controller.getScooterOne);
   app.get('/api/scooter/edit', controller.getEditScooter);
   app.post('/api/scooter', controller.addScooter);
   app.post('/api/scooter/excel', controller.addExcel);

@@ -399,7 +399,7 @@
           </v-simple-table>
         </v-card-text>
         <v-card-actions class="justify-end">
-          <v-btn color="primary" @click="generatePDF()">Generate PDF</v-btn>
+          <v-btn color="primary" @click="$router.push('/admin/scooter/pdf/' + viewRecord.id)">Generate PDF</v-btn>
           <v-btn text @click="isViewDialogEnabled = false">Close</v-btn>
         </v-card-actions>
       </v-card>
@@ -814,7 +814,11 @@ export default {
       doc.setFontSize(12).setFont("Arial", 'bold').text("PROBLEME :", 0.5, 5.1);
       doc.setLineWidth(2);
       doc.setDrawColor(255, 0, 0); 
-      doc.rect(10, 20, 150, 75);
+      doc.rect(1.5, 6, 5, 8, 'S');
+      doc.setFillColor(255,255,200);
+      doc.rect(100, 20, 10, 10, 'F')
+      doc.setFontSize(12).setFont("Arial", 'bold').text("COST REPARATIE :", 0.5, 6);
+      doc.setFontSize(12).setFont("Helvetica", 'normal').text(this.viewRecord.price, 2.6, 6);
       // create a line under heading 
       // doc.setLineWidth(0.01).line(1.55, 2.15, 6.8, 2.15);
       // Using autoTable plugin

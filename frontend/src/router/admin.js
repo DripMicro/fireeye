@@ -43,11 +43,19 @@ export default {
       },
     },
     {
-      path: "/admin/customer",
-      name: "customer",
+      path: "/admin/scooter",
+      name: "scooter",
       component: () => import("@/views/customers/List"),
       meta: {
-        title: "Customer",
+        title: "Scooter",
+      },
+    },
+    {
+      path: "/admin/scooter/pdf/:id",
+      name: "scooterpdf",
+      component: () => import("@/views/customers/PDF"),
+      meta: {
+        title: "ScooterPDF",
       },
     },
     // {
