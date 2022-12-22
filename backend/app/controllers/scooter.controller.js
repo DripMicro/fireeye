@@ -34,7 +34,7 @@ exports.getScooter = (req, res) => {
       let pages = Math.ceil(data.count / limit);
       let offset = limit * (page - 1);
       let search = req.query.search;
-      console.log(search);
+      console.log(sortfield);
        Scooter
           .findAll({
             where: {
@@ -171,12 +171,41 @@ exports.addScooter = (req, res) => {
 
   // const accessToken = authorization.split(' ')[1];
   // const { companyId } = jwt.verify(accessToken, JWT_SECRET);
-  Scooter.create(req.body).then((officeList) => {
+  Scooter.create(req.body).then((result) => {
     const data = {
-      id: officeList.id
+      id: result.id
     };
     res.status(200).send(data);
   });
 
 };
 
+
+exports.addExcel = (req, res) => {
+  const { authorization } = req.headers;
+  if (!authorization) {
+    return res.status(400).send([]);
+  }
+
+
+  // const accessToken = authorization.split(' ')[1];
+  // const { companyId } = jwt.verify(accessToken, JWT_SECRET);
+
+  req.body.forEach(element => {
+    console.log(element);
+    Scooter.create(element).then((result) => {
+      const data = {
+        id: result.id
+      };
+    });
+  })
+
+  res.status(200).send("successful");
+  // Scooter.create(req.body).then((officeList) => {
+  //   const data = {
+  //     id: officeList.id
+  //   };
+  //   res.status(200).send(data);
+  // });
+
+};

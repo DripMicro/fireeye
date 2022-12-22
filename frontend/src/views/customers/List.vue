@@ -14,8 +14,10 @@
             <v-toolbar-title>Scooter</v-toolbar-title>
             <v-divider class="mx-4" inset vertical></v-divider>
             <v-spacer></v-spacer>
+            <input id="fileUpload" type="file" @change="handleDrop($event.target.files)" hidden>
             <v-btn color="success" dark class="mb-2" @click="onCreateClick()">Create</v-btn>
-            <v-btn color="primary" dark class="mb-2 ml-2">EXPORT</v-btn>
+            <v-btn color="primary" dark class="mb-2 ml-2" @click="chooseFiles()">Import</v-btn>
+               
           </v-toolbar>
           <v-row class="mx-1">
             <v-col md="3">
@@ -94,8 +96,9 @@
               </v-icon>
             </td>
           </tr>
+          
         </template>
-
+        
         <template v-slot:expanded-item="{ item, headers }">
           <td :colspan="headers.length" v-if="item.serial_numbers.length > 0">
             <div class="ma-4"><b>Products</b></div>
@@ -396,6 +399,7 @@
           </v-simple-table>
         </v-card-text>
         <v-card-actions class="justify-end">
+          <v-btn color="primary" @click="generatePDF()">Generate PDF</v-btn>
           <v-btn text @click="isViewDialogEnabled = false">Close</v-btn>
         </v-card-actions>
       </v-card>
@@ -419,6 +423,63 @@
         <v-card-actions class="justify-center">
           <v-btn color="primary" @click="deleteScooter()">Confirm</v-btn>
           <v-btn text @click="isDeleteDialogEnabled = false">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Excel View Dialog -->
+    <v-dialog
+      v-model="isExcelViewDialogEnabled"
+      transition="dialog-bottom-transition"
+      max-width="1000"
+    >
+      <v-card>
+        <v-toolbar color="primary" dark>
+          Excel file Preview
+        </v-toolbar>
+        <v-card-text>
+          <v-data-table
+            :headers="importData.headers"
+            :items="importData.data"
+            :single-expand="true"
+            :server-items-length="importData.data.length"
+            class="pt-8"
+          >
+            <template v-slot:item="{ item }">
+              <tr>
+                <td>
+                  {{ item.firstname }}
+                </td>
+                <td>
+                  {{ item.lastname }}
+                </td>
+                <td>
+                  {{ item.phone }}
+                </td>
+                <td>
+                  {{ item.barcode }}
+                </td>
+                <td>
+                  {{ item.model }}
+                </td>
+                <td>
+                  {{ item.termen }}
+                </td>
+                <td>
+                  {{ item.problem }}
+                </td>
+                <td>
+                  {{ item.price }}
+                </td>
+              </tr>
+              
+            </template>
+            
+          </v-data-table>
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn color="primary" @click="postCreateExcel()">Save Database</v-btn>
+          <v-btn text @click="isExcelViewDialogEnabled = false">Close</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -448,6 +509,7 @@ export default {
       isCreateDialogEnabled: false,
       isDeleteDialogEnabled: false,
       isViewDialogEnabled: false,
+      isExcelViewDialogEnabled: false,
       snackBar: {
         enabled: false,
         message: "",
@@ -483,6 +545,19 @@ export default {
         { text: "Updated At", value: "updatedAt" },
         { text: "Scooter Status", value: "statusId" }
       ],
+      importData: {
+        headers: [
+          { text: "Firstname", value: "firstname", align: 'start' },
+          { text: "Lastname", value: "lastname" },
+          { text: "Phone", value: "phone" },
+          { text: "Barcode", value: "barcode" },
+          { text: "Model", value: "model" },
+          { text: "Termen Aproximativ", value: "termen" },
+          { text: "Problem", value: "problem" },
+          { text: "Price", value: "price" },
+        ],
+        data: [],
+      },  
     };
   },
   methods: {
@@ -534,7 +609,6 @@ export default {
       this.isViewDialogEnabled = true;
     },
     postCreateScooter() {
-      console.log(this.record);
       this.$http
         .post("scooter", this.record)
         .then((response) => {
@@ -544,6 +618,23 @@ export default {
             this.record = {};
             this.snackBar.enabled = true;
             this.snackBar.message = "Successfully create Scooter";
+          }
+        })
+        .catch((error) => {
+          this.snackBar.enabled = true;
+          this.snackBar.message = "Cannot edit customer at the moment";
+        });
+    },
+    postCreateExcel (){
+      this.$http
+        .post("scooter/excel", this.importData.data)
+        .then((response) => {
+          if (response.data) {
+            this.getScooter();
+            this.isEditDialogEnabled = false;
+            this.record = {};
+            this.snackBar.enabled = true;
+            this.snackBar.message = "Successfully added data in database";
           }
         })
         .catch((error) => {
@@ -645,7 +736,8 @@ export default {
         .catch((error) => {});
     },
     getSortScooter() {
-      if (this.options.sortBy[0]) {
+      // console.log(this.options.sortBy[0]);
+      // if (this.options.sortBy[0]) {
         console.log("clicked");
         console.log(this.options.sortBy);
         console.log(this.options.sortDesc);
@@ -667,17 +759,122 @@ export default {
             }
           })
           .catch((error) => {});
-      }
+      // }
     },
     findUser() {
       if (this.$route.query.email) {
         this.search = this.$route.query.email;
       }
     },
+    handleDrop(fileList) {
+      console.log("fileList");
+      var f = fileList[0];
+      var reader = new FileReader(), name = f.name
+      reader.onload = (e) => {
+        var results, 
+            data = e.target.result, 
+            fixedData = fixdata(data), 
+            workbook=XLSX.read(btoa(fixedData), {type: 'base64'}), 
+            firstSheetName = workbook.SheetNames[0], 
+            worksheet = workbook.Sheets[firstSheetName];
+        // this.importData.headers = get_header_row(worksheet);
+        results = XLSX.utils.sheet_to_json(worksheet);
+        this.importData.data = results;
+        this.isExcelViewDialogEnabled = true;
+      };
+      reader.readAsArrayBuffer(f);
+    },   
+    chooseFiles() {
+        document.getElementById("fileUpload").click()
+    },
+
+    generatePDF() {
+      const columns = [
+        { title: "Title", dataKey: "title" },
+        { title: "Body", dataKey: "body" }
+      ];
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "in",
+        format: "letter"
+      });
+      console.log(this.viewRecord);
+      // text is placed using x, y coordinates
+      doc.setFontSize(25).setFont("Arial", 'bold').text("Proces verbal de intrare in service", 1.7, 2.4);
+      doc.setFontSize(12).setFont("Arial", 'bold').text("NUME / PRENUME :", 0.5, 3.1);
+      doc.setFontSize(12).setFont("Helvetica", 'normal').text(this.viewRecord.firstname + " " + this.viewRecord.lastname, 2, 3.1);
+      doc.setFontSize(12).setFont("Arial", 'bold').text("TELEFON :", 0.5, 3.5);
+      doc.setFontSize(12).setFont("Helvetica", 'normal').text(this.viewRecord.lastname, 1.3, 3.5);
+      doc.setFontSize(12).setFont("Arial", 'bold').text("CODBARE :", 0.5, 3.9);
+      doc.setFontSize(12).setFont("Helvetica", 'normal').text(this.viewRecord.barcode, 1.55, 3.9);
+      doc.setFontSize(12).setFont("Arial", 'bold').text("MODEL :", 0.5, 4.3);
+      doc.setFontSize(12).setFont("Helvetica", 'normal').text(this.viewRecord.barcode, 1.3, 4.3);
+      doc.setFontSize(12).setFont("Arial", 'bold').text("TERMEN APROXIMATIV :", 0.5, 4.7);
+      doc.setFontSize(12).setFont("Helvetica", 'normal').text(this.viewRecord.termen, 2.6, 4.7);
+      doc.setFontSize(12).setFont("Arial", 'bold').text("PROBLEME :", 0.5, 5.1);
+      doc.setLineWidth(2);
+      doc.setDrawColor(255, 0, 0); 
+      doc.rect(10, 20, 150, 75);
+      // create a line under heading 
+      // doc.setLineWidth(0.01).line(1.55, 2.15, 6.8, 2.15);
+      // Using autoTable plugin
+      // doc.autoTable({
+      //   columns,
+      //   body: this.editRecord,
+      //   margin: { left: 0.5, top: 1.25 }
+      // });
+      // Using array of sentences
+      const moreText="This is another few sentences of text to look at it.";
+      doc
+        .setFont("helvetica")
+        .setFontSize(12)
+        .text(moreText, 0.5, 7.5, { align: "left", maxWidth: "7.5" });
+      
+      // Creating footer and saving file
+      doc
+        .setFont("times")
+        .setFontSize(11)
+        .setFontStyle("italic")
+        .setTextColor(0, 0, 255)
+        .text(
+          "This is a simple footer located .5 inches from page bottom",
+          0.5,
+          doc.internal.pageSize.height - 0.5
+        )
+        .save(`${this.heading}.pdf`);
+    }
   },
   created() {
     this.findUser();
     this.getScooter();
   },
+             
 };
+
+function fixdata(data) {
+	var o = "", l = 0, w = 10240;
+	for(; l<data.byteLength/w; ++l) o+=String.fromCharCode.apply(null,new Uint8Array(data.slice(l*w,l*w+w)));
+	o+=String.fromCharCode.apply(null, new Uint8Array(data.slice(l*w)));
+	return o;
+}
+function get_header_row(sheet) {
+    var headers = [], range = XLSX.utils.decode_range(sheet['!ref']);
+    var C, R = range.s.r; /* start in the first row */
+    for(C = range.s.c; C <= range.e.c; ++C) { /* walk every column in the range */
+        var cell = sheet[XLSX.utils.encode_cell({c:C, r:R})] /* find the cell in the first row */
+        var hdr = "XXX"; // <-- replace with your desired default 
+        if(cell && cell.t) {
+          hdr = XLSX.utils.format_cell(cell);
+        } else {
+          continue
+        }
+        let column = {
+          field: hdr,
+          name: hdr,
+          label: hdr
+        }
+        headers.push(column);
+    }
+    return headers;
+}
 </script>
