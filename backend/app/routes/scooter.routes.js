@@ -15,6 +15,7 @@ module.exports = (app) => {
   app.get('/api/scooter', controller.getScooter);
   app.get('/api/scooter/edit', controller.getEditScooter);
   app.post('/api/scooter', controller.addScooter);
+  app.post('/api/scooter/excel', controller.addExcel);
   app.put('/api/scooter', controller.updateScooter);
   app.delete('/api/scooter/:id', controller.deleteScooter);
   
